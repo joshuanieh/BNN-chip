@@ -1,21 +1,37 @@
+/*
+Module: kernel or called processing element
+Author: Chia-Jen Nieh
+Description: 
+    clk_in:          clock
+    rst_in:          active low reset
+    activation_in:   sliding window in an input layer
+    weight_in:       weight of that kernel
+    psum_in:         partial sum from previous kernel
+    psum_out:        output the some of psum_in and the sum in this kernel
+    activation_out:  pass to the kernel below
+*/
 module kernel (
     clk_in,
-    reset_in,
+    rst_in,
     activation_in,
     weight_in,
-    skip_in,
+    psum_in,
+    // skip_in, //Don't do this here because complex
+    activation_out,
     psum_out
 );
-input              clk_in, reset_in;
+
+input              clk_in, rst_in;
 input        [8:0] activation_in;
 input        [8:0] weight_in;
-// input        [31:0] psum_in; //do not add psum in this kernel because it would make a larger adder
-input        [3:0] skip_in; //How many inputs are ignored because the size isn't divisible by 9
-output reg   [4:0] psum_out; // Max=9, Min=-9
+input        [6:0] psum_in;
+// input        [3:0] skip_in; //How many inputs are ignored because the size isn't divisible by 9
+output reg   [6:0] psum_out; //support 7 kernel, 9*7=63, with a sign bit
+output reg   [8:0] activation_out;
 
 reg                partial_product  [0:8];
 reg          [3:0] population_count;
-reg          [4:0] sum;
+reg          [6:0] sum;
 
 integer i;
 always @(*) begin
@@ -37,15 +53,17 @@ always @(*) begin
 end
 
 always @(*) begin
-    sum = 2 * population_count - 5'd9 - skip_in;
+    sum = (2 * population_count - 5'd9) + psum_in;
 end
 
-always @(posedge clk_in or negedge reset_in) begin
-    if (reset_in == 1'b0) begin
-        psum_out <= 5'b0;
+always @(posedge clk_in or negedge rst_in) begin
+    if (rst_in == 1'b0) begin
+        psum_out <= 7'b0;
+        activation_out <= 9'd0;
     end
     else begin
         psum_out <= sum;
+        activation_out <= activation_in;
     end
 end
 endmodule
