@@ -5,5 +5,5 @@
 # ./kernel.out
 
 python3 testbench_data_generator.py
-iverilog -o systolic_array.out systolic_array_tb.v systolic_array.v
-./systolic_array.out
+iverilog -o PE_array.out PE_array_tb.v PE_array_27.v
+./PE_array.out

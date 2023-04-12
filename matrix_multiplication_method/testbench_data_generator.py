@@ -127,32 +127,50 @@ def generate_kernel_data():
     '''
 
 def generate_systolic_array_data():
-    weight_list = []
+    # weight_list = []
+    k=1#3*row_length*k=i_ch, a PE has 3 channels, k runs
+    row_length=3
+    o_ch=3
+    i_ch=3*row_length*k
     data_list = []
-    for i in range(1):
-        data = torch.randn(1,4,3,3).sign()                  #Binarized input
-        conv2d = nn.Conv2d(4,4,3)
-        conv2d.weight.data = conv2d.weight.data.sign()      #Binarizing weight
-        conv2d.bias.data = torch.tensor([0, 0, 0, 0])
-        output = conv2d(data)
+    data = torch.randn(1,i_ch,3,3).sign()                  #Binarized input
+    conv2d = nn.Conv2d(i_ch,o_ch,3)
+    conv2d.weight.data = conv2d.weight.data.sign()      #Binarizing weight
+    conv2d.bias.data = torch.tensor([0 for z in range(o_ch)])
+    output = conv2d(data)
+    # print(data[0])
+    # print(conv2d.weight.data)
+
+    for m in range(k):
+        for i in conv2d.weight.data: #o_ch iterations
+            count = 0
+            for j in i[m*row_length*3:(m+1)*row_length*3]: #take 3*row_length channels, a PE has 3 channels
+                if count == 0:
+                    data_list += [j.flatten().tolist()]#weight, 3 should be batched together
+                else:
+                    data_list[-1] += j.flatten().tolist()
+                count += 1
+                count %= 3
         
-        for i in conv2d.weight.data:
-            for j in i:
-                weight_list += [j.flatten().tolist()]
+        count = 0
+        for i in data[0][m*row_length*3:(m+1)*row_length*3]: #i_ch iterations
+            if count == 0:
+                data_list += [i.flatten().tolist()]
+            else:
+                data_list[-1] += i.flatten().tolist()
+            count += 1
+            count %= 3
 
-        for i in data[0]:
-            data_list += [i.flatten().tolist()]
+        # with open('weight.dat', 'w') as f:
+        #     for i in weight_list:
+        #         weight_string = ""
+        #         for j in i:
+        #             if j == -1:
+        #                 weight_string += '0'
+        #             else:
+        #                 weight_string += '1'
 
-        with open('weight.dat', 'w') as f:
-            for i in weight_list:
-                weight_string = ""
-                for j in i:
-                    if j == -1:
-                        weight_string += '0'
-                    else:
-                        weight_string += '1'
-
-                f.write("".join(weight_string) + '\n')
+        #         f.write("".join(weight_string) + '\n')
         
         with open('data.dat', 'w') as f:
             for i in data_list:
@@ -163,158 +181,20 @@ def generate_systolic_array_data():
                     else:
                         data_string += '1'
 
-                f.write("".join(data_string) + '\n')
+                f.write(data_string + '\n')
 
-        with open('golden.dat', 'w') as f:
-            for i in output.data.flatten().tolist():
-                output_string = ""
-                if i == -10:
-                    output_string = "1111111110110"
-                elif i == -9:
-                    output_string = "1111111110111"
-                elif i == -8:
-                    output_string = "1111111111000"
-                elif i == -7:
-                    output_string = "1111111111001"
-                elif i == -6:
-                    output_string = "1111111111010"
-                elif i == -5:
-                    output_string = "1111111111011"
-                elif i == -4:
-                    output_string = "1111111111100"
-                elif i == -3:
-                    output_string = "1111111111101"
-                elif i == -2:
-                    output_string = "1111111111110"
-                elif i == -1:
-                    output_string = "1111111111111"
-                elif i == 0:
-                    output_string = "0000000000000"
-                elif i == 1:
-                    output_string = "0000000000001"
-                elif i == 2:
-                    output_string = "0000000000010"
-                elif i == 3:
-                    output_string = "0000000000011"
-                elif i == 4:
-                    output_string = "0000000000100"
-                elif i == 5:
-                    output_string = "0000000000101"
-                elif i == 6:
-                    output_string = "0000000000110"
-                elif i == 7:
-                    output_string = "0000000000111"
-                elif i == 8:
-                    output_string = "0000000001000"
-                elif i == 9:
-                    output_string = "0000000001001"
-                elif i == 10:
-                    output_string = "0000000001010"
-                elif i == 11:
-                    output_string = "0000000001011"
-                elif i == 12:
-                    output_string = "0000000001100"
-                elif i == 13:
-                    output_string = "0000000001101"
-                elif i == 14:
-                    output_string = "0000000001110"
-                elif i == 15:
-                    output_string = "0000000001111"
-                elif i == 16:
-                    output_string = "0000000010000"
-                elif i == 17:
-                    output_string = "0000000010001"
-                elif i == 18:
-                    output_string = "0000000010010"
-                elif i == 19:
-                    output_string = "0000000010011"
-                elif i == 20:
-                    output_string = "0000000010100"
-                elif i == 21:
-                    output_string = "0000000010101"
-                elif i == 22:
-                    output_string = "0000000010110"
-                elif i == 23:
-                    output_string = "0000000010111"
-                elif i == 24:
-                    output_string = "0000000011000"
-                elif i == 25:
-                    output_string = "0000000011001"
-                elif i == 26:
-                    output_string = "0000000011010"
-                elif i == 27:
-                    output_string = "0000000011011"
-                elif i == 28:
-                    output_string = "0000000011100"
-                elif i == 29:
-                    output_string = "0000000011101"
-                elif i == 30:
-                    output_string = "0000000011110"
-                elif i == 31:
-                    output_string = "0000000011111"
-                elif i == 32:
-                    output_string = "0000000100000"
-                elif i == 33:
-                    output_string = "0000000100001"
-                elif i == 34:
-                    output_string = "0000000100010"
-                elif i == 35:
-                    output_string = "0000000100011"
-                elif i == 36:
-                    output_string = "0000000100100"
-                elif i == -11:
-                    output_string = "1111111110101"
-                elif i == -12:
-                    output_string = "1111111110100"
-                elif i == -13:
-                    output_string = "1111111110011"
-                elif i == -14:
-                    output_string = "1111111110010"
-                elif i == -15:
-                    output_string = "1111111110001"
-                elif i == -16:
-                    output_string = "1111111110000"
-                elif i == -17:
-                    output_string = "1111111101111"
-                elif i == -18:
-                    output_string = "1111111101110"
-                elif i == -19:
-                    output_string = "1111111101101"
-                elif i == -20:
-                    output_string = "1111111101100"
-                elif i == -21:
-                    output_string = "1111111101011"
-                elif i == -22:
-                    output_string = "1111111101010"
-                elif i == -23:
-                    output_string = "1111111101001"
-                elif i == -24:
-                    output_string = "1111111101000"
-                elif i == -25:
-                    output_string = "1111111100111"
-                elif i == -26:
-                    output_string = "1111111100110"
-                elif i == -27:
-                    output_string = "1111111100101"
-                elif i == -28:
-                    output_string = "1111111100100"
-                elif i == -29:
-                    output_string = "1111111100011"
-                elif i == -30:
-                    output_string = "1111111100010"
-                elif i == -31:
-                    output_string = "1111111100001"
-                elif i == -32:
-                    output_string = "1111111100000"
-                elif i == -33:
-                    output_string = "1111111011111"
-                elif i == -34:
-                    output_string = "1111111011110"
-                elif i == -35:
-                    output_string = "1111111011101"
-                elif i == -36:
-                    output_string = "1111111011100"
-
-
-                f.write(output_string + '\n')
+    with open('golden.dat', 'w') as f:
+        for i in output.data.flatten().tolist():
+            i = int(i)
+            output_string = ""
+            # print(i, end=": ")
+            if i >= 0:
+                output_string = '{:014b}'.format(i)
+            else:
+                i = (abs(i)-1)
+                complement_string = '{:014b}'.format(i)
+                output_list = ['0' if i == '1' else '1' for i in complement_string]
+                output_string = "".join(output_list)
+            # print(output_string)
+            f.write(output_string + '\n')
 generate_systolic_array_data()

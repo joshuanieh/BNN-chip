@@ -1,15 +1,11 @@
 /*
-Module: systolic_array
+Module: PE_array
 Author: Chia-Jen Nieh
-Description: 3*3 weight stationary systolic array supporting kernel_27
+Description: 3*3 weight stationary systolic array supporting kernel_27, After reset, the weight and data are fed in interleavedly, never stop until reset again
     clk_in:          clock
     rst_in:          active low reset
-(After reset, the weight and data are fed in interlevingly, never stop, so this signal is of no use)
-(x) load_in:         active high control signal when loading weight + activation, should maintain 9 + 3 cycles
-    data_in:       the weight or activation going to be written in
-X(pin number limit) psum_row_*_in:   partial sum from previous systolic array, should be fed at time = 5
-    psum_row_*_out:  partial sum of an output layer
-    activation_column_*_out: 
+    data_in:         the weight or activation going to be written in
+    psum_row_*_out:  partial sum of an output layer, latter been changed to one sign bit represent whole sum
 */
 `include "PE_row_27.v"
 module PE_array (
@@ -27,7 +23,7 @@ input            clk_in, rst_in;
 input  [27-1:0]  data_in;
 
 // input  [WIDTH-1:0] psum_row_0_in, psum_row_1_in, psum_row_2_in; //2**13-1=8191, larger than 9*512=4608
-output  psum_row_0_out, psum_row_1_out, psum_row_2_out;//sign bit, can be reduce to psum_row_out in time sequence
+output [WIDTH-1:0] psum_row_0_out, psum_row_1_out, psum_row_2_out;//sign bit, can be reduce to psum_row_out in time sequence
 
 wire   [27*3-1:0]  activation_row_0_out_w, activation_row_1_out_w, activation_row_end;//activation_row_end of no use
 
@@ -41,11 +37,20 @@ reg    [27-1:0]  weight_0_r, weight_1_r, weight_2_r, weight_3_r,
               weight_8_r;
 reg      psum_row_0_lock_r, psum_row_1_lock_r, psum_row_2_lock_r;//Lock the value of psum_row_0_r, psum_row_1_r, psum_row_2_r
 wire [27*3-1:0] activation_row_0_to_1, activation_row_1_to_2;
+reg first_r;
+wire first_w;
 
 assign load_count_w = (load_count_r == 4'd11) ? 4'd0 : load_count_r + 1;
-assign psum_row_0_out = psum_row_0_r[WIDTH-1];
-assign psum_row_1_out = psum_row_1_r[WIDTH-1];
-assign psum_row_2_out = psum_row_2_r[WIDTH-1];
+assign first_w = (load_count_r == 4'd11) ? 1'b0 : first_r;
+
+// assign psum_row_0_out = psum_row_0_r[WIDTH-1];
+// assign psum_row_1_out = psum_row_1_r[WIDTH-1];
+// assign psum_row_2_out = psum_row_2_r[WIDTH-1];
+
+//For test
+assign psum_row_0_out = psum_row_0_r;
+assign psum_row_1_out = psum_row_1_r;
+assign psum_row_2_out = psum_row_2_r;
 
 PE_row PE_row_0(
     .clk_in(clk_in),
@@ -80,6 +85,7 @@ PE_row PE_row_2(
 
 always @(posedge clk_in or negedge rst_in) begin
     if(rst_in == 1'b0) begin
+        first_r = 1'b1;
         activation_in_r <= 27'd0;
 
         weight_0_r <= 27'd0;
@@ -97,12 +103,13 @@ always @(posedge clk_in or negedge rst_in) begin
         psum_row_1_r <= {WIDTH{1'b0}};
         psum_row_2_r <= {WIDTH{1'b0}};
 
-        psum_row_0_lock_r <= 1'b0;
-        psum_row_1_lock_r <= 1'b0;
-        psum_row_2_lock_r <= 1'b0;
+        psum_row_0_lock_r <= 1'b1;
+        psum_row_1_lock_r <= 1'b1;
+        psum_row_2_lock_r <= 1'b1;
     end
     else begin
         load_count_r <= load_count_w;
+        first_r <= first_w;
         case (load_count_r)
             4'd0: begin
                 weight_0_r <= data_in;
@@ -115,7 +122,10 @@ always @(posedge clk_in or negedge rst_in) begin
                 weight_7_r <= weight_7_r;
                 weight_8_r <= weight_8_r;
                 activation_in_r <= activation_in_r;
-                psum_row_0_lock_r <= 1'b0;
+                if (first_r != 1'b1)
+                    psum_row_0_lock_r <= 1'b0;
+                else
+                    psum_row_0_lock_r <= 1'b1;
                 psum_row_1_lock_r <= 1'b1;
                 psum_row_2_lock_r <= 1'b1;
             end
@@ -131,7 +141,10 @@ always @(posedge clk_in or negedge rst_in) begin
                 weight_8_r <= weight_8_r;
                 activation_in_r <= activation_in_r;
                 psum_row_0_lock_r <= 1'b1;
-                psum_row_1_lock_r <= 1'b0;
+                if (first_r != 1'b1)
+                    psum_row_1_lock_r <= 1'b0;
+                else
+                    psum_row_1_lock_r <= 1'b1;
                 psum_row_2_lock_r <= 1'b1;
             end
             4'd2: begin
@@ -147,7 +160,10 @@ always @(posedge clk_in or negedge rst_in) begin
                 activation_in_r <= activation_in_r;
                 psum_row_0_lock_r <= 1'b1;
                 psum_row_1_lock_r <= 1'b1;
-                psum_row_2_lock_r <= 1'b0;
+                if (first_r != 1'b1)
+                    psum_row_2_lock_r <= 1'b0;
+                else
+                    psum_row_2_lock_r <= 1'b1;
             end
             4'd3: begin
                 weight_0_r <= weight_0_r;

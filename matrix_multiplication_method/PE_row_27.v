@@ -1,14 +1,14 @@
 /*
-Module: kernel or called processing element
+Module: PE_row
 Author: Chia-Jen Nieh
 Description: 
     clk_in:          clock
     rst_in:          active low reset
-    activation_in:   sliding window in an input layer
-    weight_in:       weight of that kernel
-    psum_in:         partial sum from previous kernel
-    psum_out:        output the some of psum_in and the sum in this kernel
-    activation_out:  pass to the kernel below
+    activation_in:   sliding window in input layers
+    weight_in:       weight of PE's
+    psum_in:         partial sum from previous calculation
+    psum_out:        output psum_out of the last PE
+    activation_out:  pass to the PE's below
 */
 `include "PE_27.v"
 module PE_row (

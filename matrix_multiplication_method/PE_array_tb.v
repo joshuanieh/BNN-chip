@@ -8,28 +8,20 @@
 module PE_array_tb;
 
 reg           clk;
-reg           rst;
-reg           load_weight;
-reg   [8:0]   activation_in[0:3];
-reg   [12:0]  psum_in[0:3];
-reg   [8:0]   weight_in;
-wire  [8:0]   activation_out[0:3];
-wire  [12:0]  psum_out[0:3];
-
-reg   [12:0]  out_mem     [0:4-1];
-reg   [8:0]   data_mem    [0:4-1];
-reg   [8:0]   weight_mem  [0:16-1];
+reg           rst;//right after reset, pass weight and data interleavedly
+reg   [27-1:0]  data_in;
+wire  [14-1:0]  psum_out[0:2];
+parameter k = 1;
+reg   [14-1:0]  out_mem     [0:3-1];
+reg   [27-1:0]   data_mem    [0:12*k-1];
 
 reg           stop;
 integer       i, out_file, err;
 
 PE_array PE_array( 
-    .clk_in(clk), .rst_in(rst), .load_weight_in(load_weight),
-    .activation_column_0_in(activation_in[0]), .activation_column_1_in(activation_in[1]), .activation_column_2_in(activation_in[2]), .activation_column_3_in(activation_in[3]),
-    .psum_row_0_in(psum_in[0]), .psum_row_1_in(psum_in[1]), .psum_row_2_in(psum_in[2]), .psum_row_3_in(psum_in[3]),
-    .weight_in(weight_in),
-    .psum_row_0_out(psum_out[0]), .psum_row_1_out(psum_out[1]), .psum_row_2_out(psum_out[2]), .psum_row_3_out(psum_out[3]),
-    .activation_column_0_out(activation_out[0]), .activation_column_1_out(activation_out[1]), .activation_column_2_out(activation_out[2]), .activation_column_3_out(activation_out[3])
+    .data_in(data_in),
+    .psum_row_0_out(psum_out[0]), .psum_row_1_out(psum_out[1]), .psum_row_2_out(psum_out[2]),
+    .clk_in(clk), .rst_in(rst)
 );       
 
 `ifdef SDF
@@ -37,70 +29,42 @@ initial $sdf_annotate(`SDFFILE, PE_array);
 `endif   
 
 initial	$readmemb (`DATA,    data_mem);
-initial	$readmemb (`WEIGHT,  weight_mem);
-// initial	$readmemb (`SKIP,    skip_mem);
 initial	$readmemb (`EXPECT,  out_mem);
 
 initial begin
     clk         = 1'b1;
-    rst         = 1'b1;
+    rst         = 1'b0;
     stop        = 1'b0;
     err         = 0;
     i           = 0;   
     
-    #2.5 rst = 1'b0;                            // system rst
-    #2.5 rst = 1'b1;
+    #(2.4*`CYCLE) rst = 1'b1;                            // system rst
 
-    @(negedge clk);
-    load_weight = 1'b1;
-    for(i=0;i<16;i=i+1) begin
-        weight_in = weight_mem[i];
+    for(i=0;i<12*k;i=i+1) begin
         @(negedge clk);
+        data_in = data_mem[i];
     end
-    load_weight = 1'b0;
     
-    activation_in[0] = data_mem[0];
-    
-    @(negedge clk);
-    activation_in[1] = data_mem[1];
-    
-    @(negedge clk);
-    activation_in[2] = data_mem[2];
-    
-    @(negedge clk);
-    activation_in[3] = data_mem[3];
-    
-    @(negedge clk);
-    psum_in[0] = 13'd0;
-    
-    @(negedge clk);
-    psum_in[1] = 13'd0;
+    #(3*`CYCLE)
     $fdisplay(out_file,"%b", psum_out[0]);
     if(psum_out[0] !== out_mem[0]) begin
         $display("ERROR at %d:output %b !=expect %b ",0, psum_out[0], out_mem[0]);
         err = err + 1;
     end
     
+    #`CYCLE
     @(negedge clk);
-    psum_in[2] = 13'd0;
     $fdisplay(out_file,"%b", psum_out[1]);
     if(psum_out[1] !== out_mem[1]) begin
         $display("ERROR at %d:output %b !=expect %b ",1, psum_out[1], out_mem[1]);
         err = err + 1;
     end
 
+    #`CYCLE
     @(negedge clk);
-    psum_in[3] = 13'd0;
     $fdisplay(out_file,"%b", psum_out[2]);
     if(psum_out[2] !== out_mem[2]) begin
         $display("ERROR at %d:output %b !=expect %b ",2, psum_out[2], out_mem[2]);
-        err = err + 1;
-    end
-
-    @(negedge clk);
-    $fdisplay(out_file,"%b", psum_out[3]);
-    if(psum_out[3] !== out_mem[3]) begin
-        $display("ERROR at %d:output %b !=expect %b ",3, psum_out[3], out_mem[3]);
         err = err + 1;
     end
 
@@ -116,7 +80,7 @@ initial begin
 
    out_file = $fopen("out.dat");
    if (out_file == 0) begin
-        $display("Output file open error !");
+        $display("Output file open error!");
         $finish;
    end
 end
