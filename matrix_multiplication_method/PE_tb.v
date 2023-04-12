@@ -1,12 +1,12 @@
 `timescale 1ns/10ps
 `define CYCLE    10           	      // Modify your clock period here
-`define SDFFILE    "./kernel_tb.sdf"  // Modify your sdf file name
+`define SDFFILE    "./PE_tb.sdf"      // Modify your sdf file name
 `define DATA       "./data.dat"       // Modify your test image file
 `define WEIGHT     "./weight.dat"     // Modify your test image file
 // `define SKIP       "./skip.dat"       // Modify your test skip file
 `define EXPECT     "./golden.dat"     // Modify your output golden file
 
-module kernel_tb;
+module PE_tb;
 
 parameter DATA_LENGTH   = 100;
 
@@ -25,7 +25,7 @@ reg   [8:0]   weight_mem  [0:DATA_LENGTH-1];
 reg           stop;
 integer       i, out_file, err;
 
-kernel kernel( .clk_in(clk),
+PE PE( .clk_in(clk),
            .rst_in(rst),
            .activation_in(activation_in),
            .weight_in(weight_in),
@@ -33,7 +33,7 @@ kernel kernel( .clk_in(clk),
            .psum_out(psum_out) );       
 
 `ifdef SDF
-initial $sdf_annotate(`SDFFILE, kernel);
+initial $sdf_annotate(`SDFFILE, PE);
 `endif   
 
 initial	$readmemb (`DATA,    data_mem);
@@ -55,7 +55,7 @@ end
 always begin #(`CYCLE/2) clk = ~clk; end
 
 initial begin
-	$dumpfile("kernel.vcd");
+	$dumpfile("PE.vcd");
 	$dumpvars;
 
    out_file = $fopen("out.dat");

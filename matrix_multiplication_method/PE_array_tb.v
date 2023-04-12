@@ -1,11 +1,11 @@
 `timescale 1ns/10ps
 `define CYCLE    10           	              // Modify your clock period here
-`define SDFFILE    "./systolic_array_tb.sdf"  // Modify your sdf file name
+`define SDFFILE    "./PE_array_tb.sdf"        // Modify your sdf file name
 `define DATA       "./data.dat"               // Modify your test image file
 `define WEIGHT     "./weight.dat"             // Modify your test image file
 `define EXPECT     "./golden.dat"             // Modify your output golden file
 
-module systolic_array_tb;
+module PE_array_tb;
 
 reg           clk;
 reg           rst;
@@ -23,7 +23,7 @@ reg   [8:0]   weight_mem  [0:16-1];
 reg           stop;
 integer       i, out_file, err;
 
-systolic_array systolic_array( 
+PE_array PE_array( 
     .clk_in(clk), .rst_in(rst), .load_weight_in(load_weight),
     .activation_column_0_in(activation_in[0]), .activation_column_1_in(activation_in[1]), .activation_column_2_in(activation_in[2]), .activation_column_3_in(activation_in[3]),
     .psum_row_0_in(psum_in[0]), .psum_row_1_in(psum_in[1]), .psum_row_2_in(psum_in[2]), .psum_row_3_in(psum_in[3]),
@@ -33,7 +33,7 @@ systolic_array systolic_array(
 );       
 
 `ifdef SDF
-initial $sdf_annotate(`SDFFILE, systolic_array);
+initial $sdf_annotate(`SDFFILE, PE_array);
 `endif   
 
 initial	$readmemb (`DATA,    data_mem);
@@ -111,7 +111,7 @@ end
 always begin #(`CYCLE/2) clk = ~clk; end
 
 initial begin
-	$dumpfile("systolic_array.vcd");
+	$dumpfile("PE_array.vcd");
 	$dumpvars;
 
    out_file = $fopen("out.dat");
