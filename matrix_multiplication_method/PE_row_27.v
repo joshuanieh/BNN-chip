@@ -22,42 +22,49 @@ module PE_row (
 );
 
 parameter WIDTH = 14;
+parameter ROW_LENGTH = 7;
 
-input                  clk_in, rst_in;
-input      [27*3-1:0]  activation_in;
-input      [27*3-1:0]  weight_in;
-input      [WIDTH-1:0] psum_in;
-output     [WIDTH-1:0] psum_out;
-output     [27*3-1:0]  activation_out;
+input                          clk_in, rst_in;
+input      [27*ROW_LENGTH-1:0] activation_in;
+input      [27*ROW_LENGTH-1:0] weight_in;
+input      [WIDTH-1:0]         psum_in;
+output     [WIDTH-1:0]         psum_out;
+output     [27*ROW_LENGTH-1:0] activation_out;
 
-wire       [WIDTH-1:0] psum_1_to_2, psum_2_to_3;
+wire       [WIDTH-1:0] psum_intermediate[0:ROW_LENGTH-2];
 
 PE PE_1 (
     .clk_in(clk_in),
     .rst_in(rst_in),
-    .activation_in(activation_in[27*3-1:27*2]),
-    .weight_in(weight_in[27*3-1:27*2]),
+    .activation_in(activation_in[27*ROW_LENGTH-1:27*(ROW_LENGTH-1)]),
+    .weight_in(weight_in[27*ROW_LENGTH-1:27*(ROW_LENGTH-1)]),
     .psum_in(psum_in),
-    .activation_out(activation_out[27*3-1:27*2]),
-    .psum_out(psum_1_to_2)
+    .activation_out(activation_out[27*ROW_LENGTH-1:27*(ROW_LENGTH-1)]),
+    .psum_out(psum_intermediate[0])
 );
 
-PE PE_2 (
-    .clk_in(clk_in),
-    .rst_in(rst_in),
-    .activation_in(activation_in[27*2-1:27*1]),
-    .weight_in(weight_in[27*2-1:27*1]),
-    .psum_in(psum_1_to_2),
-    .activation_out(activation_out[27*2-1:27*1]),
-    .psum_out(psum_2_to_3)
-);
+generate
+    genvar i;
+    for (i = 1; i < ROW_LENGTH - 1; i = i + 1) begin : PE_intermediate
+        PE PE_2 (
+            .clk_in(clk_in),
+            .rst_in(rst_in),
+            .activation_in(activation_in[27*(ROW_LENGTH-i)-1:27*(ROW_LENGTH-1-i)]),
+            .weight_in(weight_in[27*(ROW_LENGTH-i)-1:27*(ROW_LENGTH-1-i)]),
+            .psum_in(psum_intermediate[i-1]),
+            .activation_out(activation_out[27*(ROW_LENGTH-i)-1:27*(ROW_LENGTH-1-i)]),
+            .psum_out(psum_intermediate[i])
+        );
+    end
+endgenerate
+
 
 PE PE_3 (
     .clk_in(clk_in),
     .rst_in(rst_in),
     .activation_in(activation_in[27*1-1:27*0]),
     .weight_in(weight_in[27*1-1:27*0]),
-    .psum_in(psum_2_to_3),
+    .psum_in(psum_intermediate[ROW_LENGTH-2]),
     .activation_out(activation_out[27*1-1:27*0]),
     .psum_out(psum_out)
 );

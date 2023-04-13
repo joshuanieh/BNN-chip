@@ -5,14 +5,16 @@ Description: 3*3 weight stationary systolic array supporting kernel_27, After re
     clk_in:          clock
     rst_in:          active low reset
     data_in:         the weight or activation going to be written in
-    psum_out:        partial sum of an output layer, latter been changed to one sign bit represent whole sum, when count = 2 output first layer
+    psum_row_*_out:  partial sum of an output layer, latter been changed to one sign bit represent whole sum
 */
 `include "PE_row_27.v"
 module PE_array (
     clk_in,
     rst_in,
+    // load_in,
     data_in,
-    psum_out
+    // psum_row_0_in, psum_row_1_in, psum_row_2_in,
+    psum_row_0_out, psum_row_1_out, psum_row_2_out
 );
 
 parameter WIDTH = 14;
@@ -20,43 +22,37 @@ parameter ROW_LENGTH = 7;
 parameter O_CH = 3;
 parameter LOAD_COUNT_LIMIT = O_CH * ROW_LENGTH + ROW_LENGTH - 1;
 
-input                  clk_in, rst_in;
-input      [27-1:0]    data_in;
-output reg [WIDTH-1:0] psum_out;//sign bit, can be reduce to psum_row_out in time sequence
+input            clk_in, rst_in;
+input  [27-1:0]  data_in;
 
-wire [27*ROW_LENGTH-1:0] activation_row_w[0:O_CH-1];//activation_row_end of no use
-reg  [WIDTH-1:0]         psum_row_r[0:O_CH-1];//For saving temporary row sum, 2**13-1=8191, larger than 9*512=4608
-reg  [WIDTH-1:0]         psum_row_w[0:O_CH-1];//For saving temporary row sum, 2**13-1=8191, larger than 9*512=4608
-wire [WIDTH-1:0]         psum_row_tmp[0:O_CH-1];
-reg  [5-1:0]             load_count_r;
-reg  [5-1:0]             load_count_w;
-reg  [27*ROW_LENGTH-1:0] activation_in_r;
-reg  [27*ROW_LENGTH-1:0] activation_in_w;
-reg  [27-1:0]            weight_r[0:O_CH*ROW_LENGTH-1];
-reg  [27-1:0]            weight_w[0:O_CH*ROW_LENGTH-1];
-reg  [27*ROW_LENGTH-1:0] weight_row_in[0:O_CH-1];
-reg                      psum_row_lock_r[0:O_CH-1];
-reg                      psum_row_lock_w[0:O_CH-1];//Lock the value of psum_row_0_r, psum_row_1_r, psum_row_2_r
-reg                      first_r, first_w;
+// input  [WIDTH-1:0] psum_row_0_in, psum_row_1_in, psum_row_2_in; //2**13-1=8191, larger than 9*512=4608
+output [WIDTH-1:0] psum_row_0_out, psum_row_1_out, psum_row_2_out;//sign bit, can be reduce to psum_row_out in time sequence
+
+wire   [27*ROW_LENGTH-1:0]  activation_row_0_out_w, activation_row_1_out_w, activation_row_end;//activation_row_end of no use
+
+reg    [WIDTH-1:0] psum_row_0_r, psum_row_1_r, psum_row_2_r, psum_row_0_w, psum_row_1_w, psum_row_2_w;//For saving temporary row sum, 2**13-1=8191, larger than 9*512=4608
+wire    [WIDTH-1:0] psum_row_0_tmp, psum_row_1_tmp, psum_row_2_tmp;
+reg    [5-1:0]  load_count_r, load_count_w;
+reg    [27*ROW_LENGTH-1:0]  activation_in_r, activation_in_w;
+
+reg    [27-1:0]  weight_r[0:O_CH*ROW_LENGTH-1], weight_w[0:O_CH*ROW_LENGTH-1];
+reg    [27*ROW_LENGTH-1:0] weight_row_in[0:O_CH-1];
+reg     psum_row_lock_r[0:O_CH-1], psum_row_lock_w[0:O_CH-1];//Lock the value of psum_row_0_r, psum_row_1_r, psum_row_2_r
+wire [27*ROW_LENGTH-1:0] activation_row_0_to_1, activation_row_1_to_2;
+reg first_r, first_w;
 
 integer i;
 
-always @(*) begin
-    psum_out = 14'd0;
-    case (load_count_r)
-        5'd2: begin
-            psum_out = psum_row_r[0];
-        end
-        5'd3: begin
-            psum_out = psum_row_r[1];
-        end
-        5'd4: begin
-            psum_out = psum_row_r[2];
-        end
-    endcase
-end
+// assign psum_row_0_out = psum_row_0_r[WIDTH-1];
+// assign psum_row_1_out = psum_row_1_r[WIDTH-1];
+// assign psum_row_2_out = psum_row_2_r[WIDTH-1];
 
+//For test
+assign psum_row_0_out = psum_row_0_r;
+assign psum_row_1_out = psum_row_1_r;
+assign psum_row_2_out = psum_row_2_r;
 
+//Generate weight row in
 generate
     genvar j,k;
     for (j = 0; j < O_CH; j = j + 1) begin : a
@@ -73,26 +69,30 @@ PE_row PE_row_0(
     .rst_in(rst_in),
     .activation_in(activation_in_r),
     .weight_in(weight_row_in[0]),
-    .psum_in(psum_row_r[0]),
-    .activation_out(activation_row_w[0]),
-    .psum_out(psum_row_tmp[0])
+    .psum_in(psum_row_0_r),
+    .activation_out(activation_row_0_to_1),
+    .psum_out(psum_row_0_tmp)
 );
 
-generate
-    genvar m;
-    for (m = 0; m < O_CH - 1; m = m+1) begin : PE_rows
-        PE_row PE_row_1(
-            .clk_in(clk_in),
-            .rst_in(rst_in),
-            .activation_in(activation_row_w[m]),
-            .weight_in(weight_row_in[m+1]),
-            .psum_in(psum_row_r[m+1]),
-            .activation_out(activation_row_w[m+1]),
-            .psum_out(psum_row_tmp[m+1])
-        );
-    end
-endgenerate
+PE_row PE_row_1(
+    .clk_in(clk_in),
+    .rst_in(rst_in),
+    .activation_in(activation_row_0_to_1),
+    .weight_in(weight_row_in[1]),
+    .psum_in(psum_row_1_r),
+    .activation_out(activation_row_1_to_2),
+    .psum_out(psum_row_1_tmp)
+);
 
+PE_row PE_row_2(
+    .clk_in(clk_in),
+    .rst_in(rst_in),
+    .activation_in(activation_row_1_to_2),
+    .weight_in(weight_row_in[2]),
+    .psum_in(psum_row_2_r),
+    .activation_out(activation_row_end),
+    .psum_out(psum_row_2_tmp)
+);
 
 
 //Handle first input run, lock the psum
@@ -252,40 +252,37 @@ end
 
 //Handle psum_row[*]
 always @(*) begin
-    psum_row_w[0] = psum_row_r[0];
-    psum_row_w[1] = psum_row_r[1];
-    psum_row_w[2] = psum_row_r[2];
+    psum_row_0_w = psum_row_0_r;
+    psum_row_1_w = psum_row_1_r;
+    psum_row_2_w = psum_row_2_r;
     if (psum_row_lock_r[0] == 1'b0)
-        psum_row_w[0] = psum_row_tmp[0];
+        psum_row_0_w = psum_row_0_tmp;
 
     if (psum_row_lock_r[1] == 1'b0)
-        psum_row_w[1] = psum_row_tmp[1];
+        psum_row_1_w = psum_row_1_tmp;
 
     if (psum_row_lock_r[2] == 1'b0)
-        psum_row_w[2] = psum_row_tmp[2];
+        psum_row_2_w = psum_row_2_tmp;
 end
 
 always @(posedge clk_in) begin
     if(rst_in == 1'b0) begin
-        psum_row_r[0] <= {WIDTH{1'b0}};
-        psum_row_r[1] <= {WIDTH{1'b0}};
-        psum_row_r[2] <= {WIDTH{1'b0}};
+        psum_row_0_r <= {WIDTH{1'b0}};
+        psum_row_1_r <= {WIDTH{1'b0}};
+        psum_row_2_r <= {WIDTH{1'b0}};
     end
     else begin
-        psum_row_r[0] <= psum_row_w[0];
-        psum_row_r[1] <= psum_row_w[1];
-        psum_row_r[2] <= psum_row_w[2];
+        psum_row_0_r <= psum_row_0_w;
+        psum_row_1_r <= psum_row_1_w;
+        psum_row_2_r <= psum_row_2_w;
     end
 end
 
 //Handle psum row lock
 always @(*) begin
-    // for (i = 0; i < O_CH; i = i + 1) begin //->doesn't halt QQ
-    //     psum_row_lock_w[i] = 1'b1;
-    // end
-    psum_row_lock_w[0] = 1'b1;
-    psum_row_lock_w[1] = 1'b1;
-    psum_row_lock_w[2] = 1'b1;
+    for (i = 0; i < O_CH; i = i + 1) begin
+        psum_row_lock_w[i] = 1'b1;
+    end
     case (load_count_r)
         5'd0: begin
             if (first_r != 1'b1)

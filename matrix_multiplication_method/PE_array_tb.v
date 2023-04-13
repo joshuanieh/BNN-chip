@@ -7,20 +7,30 @@
 
 module PE_array_tb;
 
+initial begin
+    #(100*`CYCLE);
+    $display("Time too long.");
+    $finish;
+end
+
+parameter k = 1;//runs, say PE row length*3*k i_CH
+parameter ROW_LENGTH = 7;//PE row length
+parameter O_CH = 3;//how many PE rows
+parameter WIDTH = 14;//psum bit width
+
 reg           clk;
 reg           rst;//right after reset, pass weight and data interleavedly
 reg   [27-1:0]  data_in;
-wire  [14-1:0]  psum_out[0:2];
-parameter k = 1;
-reg   [14-1:0]  out_mem     [0:3-1];
-reg   [27-1:0]   data_mem    [0:12*k-1];
+wire  [WIDTH-1:0]  psum_out;
+reg   [WIDTH-1:0]  out_mem     [0:O_CH-1];
+reg   [27-1:0]   data_mem    [0:(O_CH+1)*ROW_LENGTH*k-1];//O_CH represents weights, 1 represents activation
 
 reg           stop;
 integer       i, out_file, err;
 
 PE_array PE_array( 
     .data_in(data_in),
-    .psum_row_0_out(psum_out[0]), .psum_row_1_out(psum_out[1]), .psum_row_2_out(psum_out[2]),
+    .psum_out(psum_out),
     .clk_in(clk), .rst_in(rst)
 );       
 
@@ -40,34 +50,21 @@ initial begin
     
     #(2.4*`CYCLE) rst = 1'b1;                            // system rst
 
-    for(i=0;i<12*k;i=i+1) begin
+    for(i=0;i<(O_CH+1)*ROW_LENGTH*k;i=i+1) begin
         @(negedge clk);
         data_in = data_mem[i];
     end
     
     #(3*`CYCLE)
-    $fdisplay(out_file,"%b", psum_out[0]);
-    if(psum_out[0] !== out_mem[0]) begin
-        $display("ERROR at %d:output %b !=expect %b ",0, psum_out[0], out_mem[0]);
-        err = err + 1;
+    for (i = 0; i<O_CH; i=i+1) begin
+        $fdisplay(out_file,"%b", psum_out);
+        if(psum_out !== out_mem[i]) begin
+            $display("ERROR at %d:output %b !=expect %b ",i, psum_out, out_mem[i]);
+            err = err + 1;
+        end
+        #(`CYCLE);
     end
     
-    #`CYCLE
-    @(negedge clk);
-    $fdisplay(out_file,"%b", psum_out[1]);
-    if(psum_out[1] !== out_mem[1]) begin
-        $display("ERROR at %d:output %b !=expect %b ",1, psum_out[1], out_mem[1]);
-        err = err + 1;
-    end
-
-    #`CYCLE
-    @(negedge clk);
-    $fdisplay(out_file,"%b", psum_out[2]);
-    if(psum_out[2] !== out_mem[2]) begin
-        $display("ERROR at %d:output %b !=expect %b ",2, psum_out[2], out_mem[2]);
-        err = err + 1;
-    end
-
     #10
     stop = 1'b1;
 end
