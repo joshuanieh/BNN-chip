@@ -128,9 +128,9 @@ def generate_kernel_data():
 
 def generate_systolic_array_data():
     # weight_list = []
-    k=1#3*row_length*k=i_ch, a PE has 3 channels, k runs
+    k=10#3*row_length*k=i_ch, a PE has 3 channels, k runs
     row_length=7
-    o_ch=3
+    o_ch=9
     i_ch=3*row_length*k
     data_list = []
     data = torch.randn(1,i_ch,3,3).sign()                  #Binarized input

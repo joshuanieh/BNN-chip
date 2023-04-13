@@ -17,7 +17,7 @@ module PE_array (
 
 parameter WIDTH = 14;
 parameter ROW_LENGTH = 7;
-parameter O_CH = 3;
+parameter O_CH = 9;
 parameter LOAD_COUNT_LIMIT = O_CH * ROW_LENGTH + ROW_LENGTH - 1;
 
 input                  clk_in, rst_in;
@@ -28,8 +28,8 @@ wire [27*ROW_LENGTH-1:0] activation_row_w[0:O_CH-1];//activation_row_end of no u
 reg  [WIDTH-1:0]         psum_row_r[0:O_CH-1];//For saving temporary row sum, 2**13-1=8191, larger than 9*512=4608
 reg  [WIDTH-1:0]         psum_row_w[0:O_CH-1];//For saving temporary row sum, 2**13-1=8191, larger than 9*512=4608
 wire [WIDTH-1:0]         psum_row_tmp[0:O_CH-1];
-reg  [5-1:0]             load_count_r;
-reg  [5-1:0]             load_count_w;
+reg  [7-1:0]             load_count_r;
+reg  [7-1:0]             load_count_w;
 reg  [27*ROW_LENGTH-1:0] activation_in_r;
 reg  [27*ROW_LENGTH-1:0] activation_in_w;
 reg  [27-1:0]            weight_r[0:O_CH*ROW_LENGTH-1];
@@ -44,14 +44,32 @@ integer i;
 always @(*) begin
     psum_out = 14'd0;
     case (load_count_r)
-        5'd2: begin
+        7'd2: begin
             psum_out = psum_row_r[0];
         end
-        5'd3: begin
+        7'd3: begin
             psum_out = psum_row_r[1];
         end
-        5'd4: begin
+        7'd4: begin
             psum_out = psum_row_r[2];
+        end
+        7'd5: begin
+            psum_out = psum_row_r[3];
+        end
+        7'd6: begin
+            psum_out = psum_row_r[4];
+        end
+        7'd7: begin
+            psum_out = psum_row_r[5];
+        end
+        7'd8: begin
+            psum_out = psum_row_r[6];
+        end
+        7'd9: begin
+            psum_out = psum_row_r[7];
+        end
+        7'd10: begin
+            psum_out = psum_row_r[8];
         end
     endcase
 end
@@ -111,111 +129,200 @@ always @(posedge clk_in) begin
     end
 end
 
-//Handle activation
-always @(*) begin
-    activation_in_w = activation_in_r;
-    case (load_count_r)
-        5'd21: begin
-            activation_in_w[27*(ROW_LENGTH)-1:27*(ROW_LENGTH-1)] = data_in;
-        end
-        5'd22: begin
-            activation_in_w[27*(ROW_LENGTH-1)-1:27*(ROW_LENGTH-2)] = data_in;
-        end
-        5'd23: begin
-            activation_in_w[27*(ROW_LENGTH-2)-1:27*(ROW_LENGTH-3)] = data_in;
-        end
-        5'd24: begin
-            activation_in_w[27*(ROW_LENGTH-3)-1:27*(ROW_LENGTH-4)] = data_in;
-        end
-        5'd25: begin
-            activation_in_w[27*(ROW_LENGTH-4)-1:27*(ROW_LENGTH-5)] = data_in;
-        end
-        5'd26: begin
-            activation_in_w[27*(ROW_LENGTH-5)-1:27*(ROW_LENGTH-6)] = data_in;
-        end
-        5'd27: begin
-            activation_in_w[27*(ROW_LENGTH-6)-1:27*(ROW_LENGTH-7)] = data_in;
-        end
-    endcase
-end
-
-always @(posedge clk_in) begin
-    if(rst_in == 1'b0) begin
-        activation_in_r <= {27*ROW_LENGTH{1'b0}};
-    end
-    else begin
-        activation_in_r <= activation_in_w;
-    end
-end
-
-//Handle weight
+//Handle weight, O_CH*ROW_LENGTH = 63
 always @(*) begin
     for (i = 0; i < O_CH * ROW_LENGTH; i = i + 1) begin
         weight_w[i] = weight_r[i];
     end
     case (load_count_r)
-        5'd0: begin
+        7'd0: begin
             weight_w[0] = data_in;
         end
-        5'd1: begin
+        7'd1: begin
             weight_w[1] = data_in;
         end
-        5'd2: begin
+        7'd2: begin
             weight_w[2] = data_in;
         end
-        5'd3: begin
+        7'd3: begin
             weight_w[3] = data_in;
         end
-        5'd4: begin
+        7'd4: begin
             weight_w[4] = data_in;
         end
-        5'd5: begin
+        7'd5: begin
             weight_w[5] = data_in;
         end
-        5'd6: begin
+        7'd6: begin
             weight_w[6] = data_in;
         end
-        5'd7: begin
+        7'd7: begin
             weight_w[7] = data_in;
         end
-        5'd8: begin
+        7'd8: begin
             weight_w[8] = data_in;
         end
-        5'd9: begin
+        7'd9: begin
             weight_w[9] = data_in;
         end
-        5'd10: begin
+        7'd10: begin
             weight_w[10] = data_in;
         end
-        5'd11: begin
+        7'd11: begin
             weight_w[11] = data_in;
         end
-        5'd12: begin
+        7'd12: begin
             weight_w[12] = data_in;
         end
-        5'd13: begin
+        7'd13: begin
             weight_w[13] = data_in;
         end
-        5'd14: begin
+        7'd14: begin
             weight_w[14] = data_in;
         end
-        5'd15: begin
+        7'd15: begin
             weight_w[15] = data_in;
         end
-        5'd16: begin
+        7'd16: begin
             weight_w[16] = data_in;
         end
-        5'd17: begin
+        7'd17: begin
             weight_w[17] = data_in;
         end
-        5'd18: begin
+        7'd18: begin
             weight_w[18] = data_in;
         end
-        5'd19: begin
+        7'd19: begin
             weight_w[19] = data_in;
         end
-        5'd20: begin
+        7'd20: begin
             weight_w[20] = data_in;
+        end
+        7'd21: begin
+            weight_w[21] = data_in;
+        end
+        7'd22: begin
+            weight_w[22] = data_in;
+        end
+        7'd23: begin
+            weight_w[23] = data_in;
+        end
+        7'd24: begin
+            weight_w[24] = data_in;
+        end
+        7'd25: begin
+            weight_w[25] = data_in;
+        end
+        7'd26: begin
+            weight_w[26] = data_in;
+        end
+        7'd27: begin
+            weight_w[27] = data_in;
+        end
+        7'd28: begin
+            weight_w[28] = data_in;
+        end
+        7'd29: begin
+            weight_w[29] = data_in;
+        end
+        7'd30: begin
+            weight_w[30] = data_in;
+        end
+        7'd31: begin
+            weight_w[31] = data_in;
+        end
+        7'd32: begin
+            weight_w[32] = data_in;
+        end
+        7'd33: begin
+            weight_w[33] = data_in;
+        end
+        7'd34: begin
+            weight_w[34] = data_in;
+        end
+        7'd35: begin
+            weight_w[35] = data_in;
+        end
+        7'd36: begin
+            weight_w[36] = data_in;
+        end
+        7'd37: begin
+            weight_w[37] = data_in;
+        end
+        7'd38: begin
+            weight_w[38] = data_in;
+        end
+        7'd39: begin
+            weight_w[39] = data_in;
+        end
+        7'd40: begin
+            weight_w[40] = data_in;
+        end
+        7'd41: begin
+            weight_w[41] = data_in;
+        end
+        7'd42: begin
+            weight_w[42] = data_in;
+        end
+        7'd43: begin
+            weight_w[43] = data_in;
+        end
+        7'd44: begin
+            weight_w[44] = data_in;
+        end
+        7'd45: begin
+            weight_w[45] = data_in;
+        end
+        7'd46: begin
+            weight_w[46] = data_in;
+        end
+        7'd47: begin
+            weight_w[47] = data_in;
+        end
+        7'd48: begin
+            weight_w[48] = data_in;
+        end
+        7'd49: begin
+            weight_w[49] = data_in;
+        end
+        7'd50: begin
+            weight_w[50] = data_in;
+        end
+        7'd51: begin
+            weight_w[51] = data_in;
+        end
+        7'd52: begin
+            weight_w[52] = data_in;
+        end
+        7'd53: begin
+            weight_w[53] = data_in;
+        end
+        7'd54: begin
+            weight_w[54] = data_in;
+        end
+        7'd55: begin
+            weight_w[55] = data_in;
+        end
+        7'd56: begin
+            weight_w[56] = data_in;
+        end
+        7'd57: begin
+            weight_w[57] = data_in;
+        end
+        7'd58: begin
+            weight_w[58] = data_in;
+        end
+        7'd59: begin
+            weight_w[59] = data_in;
+        end
+        7'd60: begin
+            weight_w[60] = data_in;
+        end
+        7'd61: begin
+            weight_w[61] = data_in;
+        end
+        7'd62: begin
+            weight_w[62] = data_in;
         end
     endcase
 end
@@ -233,17 +340,54 @@ always @(posedge clk_in) begin
     end
 end
 
+//Handle activation
+always @(*) begin
+    activation_in_w = activation_in_r;
+    case (load_count_r)
+        7'd63: begin
+            activation_in_w[27*(ROW_LENGTH)-1:27*(ROW_LENGTH-1)] = data_in;
+        end
+        7'd64: begin
+            activation_in_w[27*(ROW_LENGTH-1)-1:27*(ROW_LENGTH-2)] = data_in;
+        end
+        7'd65: begin
+            activation_in_w[27*(ROW_LENGTH-2)-1:27*(ROW_LENGTH-3)] = data_in;
+        end
+        7'd66: begin
+            activation_in_w[27*(ROW_LENGTH-3)-1:27*(ROW_LENGTH-4)] = data_in;
+        end
+        7'd67: begin
+            activation_in_w[27*(ROW_LENGTH-4)-1:27*(ROW_LENGTH-5)] = data_in;
+        end
+        7'd68: begin
+            activation_in_w[27*(ROW_LENGTH-5)-1:27*(ROW_LENGTH-6)] = data_in;
+        end
+        7'd69: begin
+            activation_in_w[27*(ROW_LENGTH-6)-1:27*(ROW_LENGTH-7)] = data_in;
+        end
+    endcase
+end
+
+always @(posedge clk_in) begin
+    if(rst_in == 1'b0) begin
+        activation_in_r <= {27*ROW_LENGTH{1'b0}};
+    end
+    else begin
+        activation_in_r <= activation_in_w;
+    end
+end
+
 //Handle load_count
 always @(*) begin
     load_count_w = load_count_r + 1;
     if (load_count_r == LOAD_COUNT_LIMIT) begin
-        load_count_w = 5'd0;
+        load_count_w = 7'd0;
     end
 end
 
 always @(posedge clk_in) begin
     if(rst_in == 1'b0) begin
-        load_count_r <= 5'd0;
+        load_count_r <= 7'd0;
     end
     else begin
         load_count_r <= load_count_w;
@@ -255,6 +399,12 @@ always @(*) begin
     psum_row_w[0] = psum_row_r[0];
     psum_row_w[1] = psum_row_r[1];
     psum_row_w[2] = psum_row_r[2];
+    psum_row_w[3] = psum_row_r[3];
+    psum_row_w[4] = psum_row_r[4];
+    psum_row_w[5] = psum_row_r[5];
+    psum_row_w[6] = psum_row_r[6];
+    psum_row_w[7] = psum_row_r[7];
+    psum_row_w[8] = psum_row_r[8];
     if (psum_row_lock_r[0] == 1'b0)
         psum_row_w[0] = psum_row_tmp[0];
 
@@ -263,18 +413,36 @@ always @(*) begin
 
     if (psum_row_lock_r[2] == 1'b0)
         psum_row_w[2] = psum_row_tmp[2];
+
+    if (psum_row_lock_r[3] == 1'b0)
+        psum_row_w[3] = psum_row_tmp[3];
+
+    if (psum_row_lock_r[4] == 1'b0)
+        psum_row_w[4] = psum_row_tmp[4];
+
+    if (psum_row_lock_r[5] == 1'b0)
+        psum_row_w[5] = psum_row_tmp[5];
+
+    if (psum_row_lock_r[6] == 1'b0)
+        psum_row_w[6] = psum_row_tmp[6];
+
+    if (psum_row_lock_r[7] == 1'b0)
+        psum_row_w[7] = psum_row_tmp[7];
+
+    if (psum_row_lock_r[8] == 1'b0)
+        psum_row_w[8] = psum_row_tmp[8];
 end
 
 always @(posedge clk_in) begin
     if(rst_in == 1'b0) begin
-        psum_row_r[0] <= {WIDTH{1'b0}};
-        psum_row_r[1] <= {WIDTH{1'b0}};
-        psum_row_r[2] <= {WIDTH{1'b0}};
+        for (i = 0; i < O_CH; i = i + 1) begin
+            psum_row_r[i] <= {WIDTH{1'b0}};
+        end
     end
     else begin
-        psum_row_r[0] <= psum_row_w[0];
-        psum_row_r[1] <= psum_row_w[1];
-        psum_row_r[2] <= psum_row_w[2];
+        for (i = 0; i < O_CH; i = i + 1) begin
+            psum_row_r[i] <= psum_row_w[i];
+        end
     end
 end
 
@@ -286,18 +454,48 @@ always @(*) begin
     psum_row_lock_w[0] = 1'b1;
     psum_row_lock_w[1] = 1'b1;
     psum_row_lock_w[2] = 1'b1;
+    psum_row_lock_w[3] = 1'b1;
+    psum_row_lock_w[4] = 1'b1;
+    psum_row_lock_w[5] = 1'b1;
+    psum_row_lock_w[6] = 1'b1;
+    psum_row_lock_w[7] = 1'b1;
+    psum_row_lock_w[8] = 1'b1;
     case (load_count_r)
-        5'd0: begin
+        7'd0: begin
             if (first_r != 1'b1)
                 psum_row_lock_w[0] = 1'b0;
         end
-        5'd1: begin
+        7'd1: begin
             if (first_r != 1'b1)
                 psum_row_lock_w[1] = 1'b0;
         end
-        5'd2: begin
+        7'd2: begin
             if (first_r != 1'b1)
                 psum_row_lock_w[2] = 1'b0;
+        end
+        7'd3: begin
+            if (first_r != 1'b1)
+                psum_row_lock_w[3] = 1'b0;
+        end
+        7'd4: begin
+            if (first_r != 1'b1)
+                psum_row_lock_w[4] = 1'b0;
+        end
+        7'd5: begin
+            if (first_r != 1'b1)
+                psum_row_lock_w[5] = 1'b0;
+        end
+        7'd6: begin
+            if (first_r != 1'b1)
+                psum_row_lock_w[6] = 1'b0;
+        end
+        7'd7: begin
+            if (first_r != 1'b1)
+                psum_row_lock_w[7] = 1'b0;
+        end
+        7'd8: begin
+            if (first_r != 1'b1)
+                psum_row_lock_w[8] = 1'b0;
         end
     endcase
 end
