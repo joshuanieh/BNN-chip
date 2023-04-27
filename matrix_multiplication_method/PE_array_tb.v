@@ -8,15 +8,15 @@
 module PE_array_tb;
 
 initial begin
-    #(1000*`CYCLE);
+    #(1000000*`CYCLE);
     $display("Time too long.");
     $finish;
 end
 
 parameter k = 10;//runs, say PE row length*3*k i_CH
 parameter WIDTH = 14;//psum bit width
-parameter ROW_LENGTH = 7;//PE row length
-parameter O_CH = 9;//how many PE rows
+parameter ROW_LENGTH = 11;//PE row length
+parameter O_CH = 8;//how many PE rows
 
 reg           clk;
 reg           rst;//right after reset, pass weight and data interleavedly

@@ -129,14 +129,14 @@ def generate_kernel_data():
 def generate_systolic_array_data():
     # weight_list = []
     k=10#3*row_length*k=i_ch, a PE has 3 channels, k runs
-    row_length=7
-    o_ch=9
-    i_ch=3*row_length*k
+    row_length=10
+    o_ch=8
+    i_ch=(3*row_length+2)*k
     data_list = []
     data = torch.randn(1,i_ch,3,3).sign()                  #Binarized input
     conv2d = nn.Conv2d(i_ch,o_ch,3)
     conv2d.weight.data = conv2d.weight.data.sign()      #Binarizing weight
-    conv2d.bias.data = torch.tensor([0 for z in range(o_ch)])
+    conv2d.bias.data = torch.tensor([0. for z in range(o_ch)])
     output = conv2d(data)
     # print(data[0])
     # print(conv2d.weight.data)
@@ -144,22 +144,28 @@ def generate_systolic_array_data():
     for m in range(k):
         for i in conv2d.weight.data: #o_ch iterations
             count = 0
-            for j in i[m*row_length*3:(m+1)*row_length*3]: #take 3*row_length channels, a PE has 3 channels
-                if count == 0:
+            for j in i[m*(row_length*3+2):(m+1)*(row_length*3+2)]: #take 3*row_length channels, a PE has 3 channels
+                if count % 3 == 0:
                     data_list += [j.flatten().tolist()]#weight, 3 should be batched together
                 else:
                     data_list[-1] += j.flatten().tolist()
+                
                 count += 1
-                count %= 3
-        
+                if count == 32:
+                    data_list[-1] += [0 for t in range(9)]
+                    count = 0
+
+
         count = 0
-        for i in data[0][m*row_length*3:(m+1)*row_length*3]: #i_ch iterations
+        for i in data[0][m*(row_length*3+2):(m+1)*(row_length*3+2)]: #i_ch iterations
             if count == 0:
                 data_list += [i.flatten().tolist()]
             else:
                 data_list[-1] += i.flatten().tolist()
             count += 1
             count %= 3
+
+        data_list[-1] += [0 for t in range(9)]
 
         # with open('weight.dat', 'w') as f:
         #     for i in weight_list:

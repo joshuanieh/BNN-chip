@@ -11,6 +11,7 @@ Description:
     activation_out:  pass to the PE's below
 */
 `include "PE_27.v"
+`include "PE_18.v"
 module PE_row (
     clk_in,
     rst_in,
@@ -22,7 +23,7 @@ module PE_row (
 );
 
 parameter WIDTH = 14;
-parameter ROW_LENGTH = 7;
+parameter ROW_LENGTH = 11;
 
 input                          clk_in, rst_in;
 input      [27*ROW_LENGTH-1:0] activation_in;
@@ -33,7 +34,7 @@ output     [27*ROW_LENGTH-1:0] activation_out;
 
 wire       [WIDTH-1:0] psum_intermediate[0:ROW_LENGTH-2];
 
-PE PE_1 (
+PE_27 PE_1 (
     .clk_in(clk_in),
     .rst_in(rst_in),
     .activation_in(activation_in[27*ROW_LENGTH-1:27*(ROW_LENGTH-1)]),
@@ -46,7 +47,7 @@ PE PE_1 (
 generate
     genvar i;
     for (i = 1; i < ROW_LENGTH - 1; i = i + 1) begin : PE_intermediate
-        PE PE_2 (
+        PE_27 PE_2 (
             .clk_in(clk_in),
             .rst_in(rst_in),
             .activation_in(activation_in[27*(ROW_LENGTH-i)-1:27*(ROW_LENGTH-1-i)]),
@@ -58,14 +59,13 @@ generate
     end
 endgenerate
 
-
-PE PE_3 (
+PE_18 PE_3 (
     .clk_in(clk_in),
     .rst_in(rst_in),
-    .activation_in(activation_in[27*1-1:27*0]),
-    .weight_in(weight_in[27*1-1:27*0]),
+    .activation_in(activation_in[26:0]),
+    .weight_in(weight_in[26:0]),
     .psum_in(psum_intermediate[ROW_LENGTH-2]),
-    .activation_out(activation_out[27*1-1:27*0]),
+    .activation_out(activation_out[26:0]),
     .psum_out(psum_out)
 );
 
