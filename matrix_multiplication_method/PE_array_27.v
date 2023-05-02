@@ -1,89 +1,6 @@
 /*
 Module: PE_array
-Author: Chia-Jen Nieh            end
-        end
-    end
-endgenerate
-
-PE_row PE_row_0(
-    .clk_in(clk_in),
-    .rst_in(rst_in),
-    .activation_in(activation_in_r),
-    .weight_in(weight_row_in[0]),
-    .psum_in(psum_row_r[0]),
-    .activation_out(activation_row_w[0]),
-    .psum_out(psum_row_tmp[0])
-);
-
-generate
-    genvar m;
-    for (m = 0; m < O_CH - 1; m = m+1) begin : PE_rows
-        PE_row PE_row_1(
-            .clk_in(clk_in),
-            .rst_in(rst_in),
-            .activation_in(activation_row_w[m]),
-            .weight_in(weight_row_in[m+1]),
-            .psum_in(psum_row_r[m+1]),
-            .activation_out(activation_row_w[m+1]),
-            .psum_out(psum_row_tmp[m+1])
-        );
-    end
-endgenerate
-
-
-
-//Handle first input run, lock the psum
-always @(*) begin
-    first_w = first_r;
-    if (load_count_r == LOAD_COUNT_LIMIT) 
-        first_w = 1'b0;
-end
-
-always @(posedge clk_in) begin
-    if(rst_in == 1'b0) begin
-        first_r <= 1'b1;
-    end
-    else begin
-        first_r <= first_w;
-    end
-end
-
-//Handle weight, O_CH*ROW_LENGTH = 63
-always @(*) begin
-    for (i = 0; i < O_CH * ROW_LENGTH; i = i + 1) begin
-        weight_w[i] = weight_r[i];
-    end
-    case (load_count_r)
-        7'd0: begin
-            weight_w[0] = data_in;
-        end
-        7'd1: begin
-            weight_w[1] = data_in;
-        end
-        7'd2: begin
-            weight_w[2] = data_in;
-        end
-        7'd3: begin
-            weight_w[3] = data_in;
-        end
-        7'd4: begin
-            weight_w[4] = data_in;
-        end
-        7'd5: begin
-            weight_w[5] = data_in;
-        end
-        7'd6: begin
-            weight_w[6] = data_in;
-        end
-        7'd7: begin
-            weight_w[7] = data_in;
-        end
-        7'd8: begin
-            weight_w[8] = data_in;
-        end
-        7'd9: begin
-            weight_w[9] = data_in;
-        end
+Author: Chia-Jen Nieh
 Description: 3*3 weight stationary systolic array supporting kernel_27, After reset, the weight and data are fed in interleavedly, never stop until reset again
     clk_in:          clock
     rst_in:          active low reset
@@ -100,7 +17,7 @@ module PE_array (
 
 parameter WIDTH = 14;
 parameter ROW_LENGTH = 11;
-parameter O_CH = 8;
+parameter O_CH = 6;
 parameter LOAD_COUNT_LIMIT = O_CH * ROW_LENGTH + ROW_LENGTH - 1;
 
 input                  clk_in, rst_in;
@@ -144,12 +61,6 @@ always @(*) begin
         end
         7'd7: begin
             psum_out = psum_row_r[5];
-        end
-        7'd8: begin
-            psum_out = psum_row_r[6];
-        end
-        7'd9: begin
-            psum_out = psum_row_r[7];
         end
     endcase
 end
@@ -209,7 +120,20 @@ always @(posedge clk_in) begin
     end
 end
 
-//Handle weight, O_CH*ROW_LENGTH = 63
+//Handle weight, O_CH*ROW_LENGTH = 88
+// always @(*) begin
+//     if (load_count_r >= ROW_LENGTH*O_CH) begin
+//         for (i = 0; i < O_CH * ROW_LENGTH; i = i + 1) begin
+//             weight_w[i] = weight_r[i];
+//         end
+//     end
+//     else begin
+//         for (i = 0; i < O_CH * ROW_LENGTH-1; i = i + 1) begin
+//             weight_w[i] = weight_r[i+1];
+//         end
+//         weight_w[ROW_LENGTH*O_CH-1] = data_in;
+//     end
+// end
 always @(*) begin
     for (i = 0; i < O_CH * ROW_LENGTH; i = i + 1) begin
         weight_w[i] = weight_r[i];
@@ -413,72 +337,6 @@ always @(*) begin
         7'd65: begin
             weight_w[65] = data_in;
         end
-        7'd66: begin
-            weight_w[66] = data_in;
-        end
-        7'd67: begin
-            weight_w[67] = data_in;
-        end
-        7'd68: begin
-            weight_w[68] = data_in;
-        end
-        7'd69: begin
-            weight_w[69] = data_in;
-        end
-        7'd70: begin
-            weight_w[70] = data_in;
-        end
-        7'd71: begin
-            weight_w[71] = data_in;
-        end
-        7'd72: begin
-            weight_w[72] = data_in;
-        end
-        7'd73: begin
-            weight_w[73] = data_in;
-        end
-        7'd74: begin
-            weight_w[74] = data_in;
-        end
-        7'd75: begin
-            weight_w[75] = data_in;
-        end
-        7'd76: begin
-            weight_w[76] = data_in;
-        end
-        7'd77: begin
-            weight_w[77] = data_in;
-        end
-        7'd78: begin
-            weight_w[78] = data_in;
-        end
-        7'd79: begin
-            weight_w[79] = data_in;
-        end
-        7'd80: begin
-            weight_w[80] = data_in;
-        end
-        7'd81: begin
-            weight_w[81] = data_in;
-        end
-        7'd82: begin
-            weight_w[82] = data_in;
-        end
-        7'd83: begin
-            weight_w[83] = data_in;
-        end
-        7'd84: begin
-            weight_w[84] = data_in;
-        end
-        7'd85: begin
-            weight_w[85] = data_in;
-        end
-        7'd86: begin
-            weight_w[86] = data_in;
-        end
-        7'd87: begin
-            weight_w[87] = data_in;
-        end
     endcase
 end
 
@@ -499,37 +357,37 @@ end
 always @(*) begin
     activation_in_w = activation_in_r;
     case (load_count_r)
-        7'd88: begin
+        7'd66: begin
             activation_in_w[27*(ROW_LENGTH)-1:27*(ROW_LENGTH-1)] = data_in;
         end
-        7'd89: begin
+        7'd67: begin
             activation_in_w[27*(ROW_LENGTH-1)-1:27*(ROW_LENGTH-2)] = data_in;
         end
-        7'd90: begin
+        7'd68: begin
             activation_in_w[27*(ROW_LENGTH-2)-1:27*(ROW_LENGTH-3)] = data_in;
         end
-        7'd91: begin
+        7'd69: begin
             activation_in_w[27*(ROW_LENGTH-3)-1:27*(ROW_LENGTH-4)] = data_in;
         end
-        7'd92: begin
+        7'd70: begin
             activation_in_w[27*(ROW_LENGTH-4)-1:27*(ROW_LENGTH-5)] = data_in;
         end
-        7'd93: begin
+        7'd71: begin
             activation_in_w[27*(ROW_LENGTH-5)-1:27*(ROW_LENGTH-6)] = data_in;
         end
-        7'd94: begin
+        7'd72: begin
             activation_in_w[27*(ROW_LENGTH-6)-1:27*(ROW_LENGTH-7)] = data_in;
         end
-        7'd95: begin
+        7'd73: begin
             activation_in_w[27*(ROW_LENGTH-7)-1:27*(ROW_LENGTH-8)] = data_in;
         end
-        7'd96: begin
+        7'd74: begin
             activation_in_w[27*(ROW_LENGTH-8)-1:27*(ROW_LENGTH-9)] = data_in;
         end
-        7'd97: begin
+        7'd75: begin
             activation_in_w[27*(ROW_LENGTH-9)-1:27*(ROW_LENGTH-10)] = data_in;
         end
-        7'd98: begin
+        7'd76: begin
             activation_in_w[27*(ROW_LENGTH-10)-1:27*(ROW_LENGTH-11)] = data_in;
         end
     endcase
