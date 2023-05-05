@@ -35,7 +35,7 @@ wire       [WIDTH*O_CH-1:0]      PE_column_psum_output; //sotre into psum_r[*][0
 reg        [8-1:0]               pop_count_w; //Because O_CH * OUT_ROW_LENGTH = 256, 8 bits
 reg        [8-1:0]               pop_count_r; //Because O_CH * OUT_ROW_LENGTH = 256, 8 bits
 
-integer                          i, j, m, n, p, q, r, s, t, u, v, w, x, y, z;
+integer                          i, j, m, n, p, q, r, s, t, u, v, w, x, y, z, a;
 
 /*Begin handling weights*/
 //Handle weight_count_r, add by 1 when load_weight_in is true
@@ -71,9 +71,16 @@ end
 /*Begin handling storage elements*/
 //Handle in_valid_r, propagate to larger o_ch row to know if input arrive and the shifter starts rotating
 always @(posedge clk_in) begin
-    in_valid_r[0] <= in_valid_in;
-    for (m = 1; m <= O_CH-2; m = m + 1) begin
-        in_valid_r[m] <= in_valid_r[m-1];
+    if (rst_in == 1'b0) begin
+       for (a = 0; a <= O_CH-2; a = a + 1) begin
+            in_valid_r[a] <= 1'b0;
+        end 
+    end
+    else begin
+        in_valid_r[0] <= in_valid_in;
+        for (m = 1; m <= O_CH-2; m = m + 1) begin
+            in_valid_r[m] <= in_valid_r[m-1];
+        end
     end
 end
 

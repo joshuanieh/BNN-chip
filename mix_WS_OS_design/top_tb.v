@@ -1,10 +1,10 @@
 `timescale 1ns/10ps
-`define CYCLE    10           	              // Modify your clock period here
+`define CYCLE    50           	              // Modify your clock period here
 `define SDFFILE    "./top_syn.sdf"        // Modify your sdf file name
 `define DATA       "./data.dat"               // Modify your test image file
 `define EXPECT     "./golden.dat"             // Modify your output golden file
 // `include "top.v"
-module PE_array_tb;
+module top_tb;
 
 initial begin
     #(1000000*`CYCLE);
@@ -64,7 +64,7 @@ initial begin
     for(i=line_count;i<now_pos + O_CH;i=i+1) begin
         // $display("Loading weight");
         @(posedge clk);
-        #(0.001*`CYCLE);
+        #(0.00001*`CYCLE);
         load_weight = 1'b1;
         data_in = data_mem[i];
         line_count = line_count + 1;
@@ -74,7 +74,7 @@ initial begin
     
     for(i=line_count;i<now_pos+OUT_ROW_LENGTH;i=i+1) begin
         @(posedge clk);
-        #(0.001*`CYCLE);
+        #(0.00001*`CYCLE);
         // $display("Loading input");
         load_weight = 1'b0;
         in_valid = 1'b1;
@@ -85,7 +85,7 @@ initial begin
     
     for(i=line_count;i<now_pos + O_CH;i=i+1) begin
         @(posedge clk);
-        #(0.001*`CYCLE);
+        #(0.00001*`CYCLE);
         in_valid = 1'b0;
         load_weight = 1'b1;
         data_in = data_mem[i];
@@ -96,7 +96,7 @@ initial begin
     
     for(i=line_count;i<now_pos+OUT_ROW_LENGTH;i=i+1) begin
         @(posedge clk);
-        #(0.001*`CYCLE);
+        #(0.00001*`CYCLE);
         load_weight = 1'b0;
         in_valid = 1'b1;
         data_in = data_mem[i];
@@ -106,7 +106,7 @@ initial begin
     
     for(i=line_count;i<now_pos + O_CH;i=i+1) begin
         @(posedge clk);
-        #(0.001*`CYCLE);
+        #(0.00001*`CYCLE);
         in_valid = 1'b0;
         load_weight = 1'b1;
         data_in = data_mem[i];
@@ -117,7 +117,7 @@ initial begin
     
     for(i=line_count;i<now_pos+OUT_ROW_LENGTH;i=i+1) begin
         @(posedge clk);
-        #(0.001*`CYCLE);
+        #(0.00001*`CYCLE);
         load_weight = 1'b0;
         in_valid = 1'b1;
         data_in = data_mem[i];
@@ -160,7 +160,7 @@ always begin #(`CYCLE/2) clk = ~clk; end
 
 initial begin
     $fsdbDumpfile("top.fsdb");            
-    $fsdbDumpvars(0,PE_array_tb,"+mda");
+    $fsdbDumpvars(0,top_tb,"+mda");
 
 	// $dumpfile("PE_array.vcd");
 	// $dumpvars;
