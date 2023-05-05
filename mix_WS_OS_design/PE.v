@@ -30,7 +30,7 @@ output reg [9-1:0]     activation_out;
 
 reg                    partial_product [0:9-1];
 reg        [4-1:0]     population_count;
-reg        [WIDTH-1:0] psum_out_w;
+// reg        [WIDTH-1:0] psum_out_w;
 
 integer i;
 
@@ -53,11 +53,11 @@ always @(*) begin
 end
 
 always @(*) begin
-    psum_out_w = (2 * population_count - 4'd9) + psum_in;
+    psum_out = $signed(2 * population_count - 4'd9) + psum_in;
 end
 
 always @(posedge clk_in) begin
-    psum_out <= psum_out_w;
+    // psum_out <= psum_out_w;
     activation_out <= activation_in;
 end
 

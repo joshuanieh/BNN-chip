@@ -25,7 +25,7 @@ assign activation[0] = activation_in;
 
 generate
     genvar k;
-    for (k = 0; k < O_CH; k = k + 1) begin
+    for (k = 0; k < O_CH; k = k + 1) begin : PE
         PE PE (
             .clk_in(clk_in),
             // .rst_in,

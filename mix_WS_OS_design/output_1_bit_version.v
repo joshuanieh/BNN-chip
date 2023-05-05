@@ -18,7 +18,7 @@ input      [9-1:0]               data_in; //9 input pins
 input                            load_weight_in; //load at most O_CH weight
 input                            in_valid_in;
 input                            pop_in;
-output     [WIDTH-1:0]           sum_out; //Some psum_r result
+output reg [OUT_ROW_LENGTH-1:0]  sum_out; //sign bit, first in last out(first in weight last output out, a determinable output channel can be used)
 
 reg        [6-1:0]               weight_count_w; //Because 64 out layers, use 6 bits to count
 reg        [6-1:0]               weight_count_r; //Because 64 out layers, use 6 bits to count
@@ -32,10 +32,10 @@ reg        [9*O_CH-1:0]          PE_column_weight_input; //Concate weight_r[:]
 reg        [WIDTH*O_CH-1:0]      PE_column_psum_input; //take from psum_r[:][OUT_ROW_LENGTH-1]
 wire       [WIDTH*O_CH-1:0]      PE_column_psum_output; //sotre into psum_r[*][0] if in_valid_r[*] is true
 
-reg        [8-1:0]               pop_count_w; //Because O_CH * OUT_ROW_LENGTH = 256, 8 bits
-reg        [8-1:0]               pop_count_r; //Because O_CH * OUT_ROW_LENGTH = 256, 8 bits
+reg        [6-1:0]               pop_count_w; //Because 64 out layers, use 6 bits to count
+reg        [6-1:0]               pop_count_r; //Because 64 out layers, use 6 bits to count
 
-integer                          i, j, m, n, p, q, r, s, t, u, v, w, x, y, z;
+integer i, j, m, n, p, q, r, s, t, u, v, w, x, y, z;
 
 /*Begin handling weights*/
 //Handle weight_count_r, add by 1 when load_weight_in is true
@@ -163,7 +163,7 @@ always @(*) begin
         pop_count_w = pop_count_r + 1;
     end
     else begin
-        pop_count_w = 8'd0;
+        pop_count_w = 6'd0;
     end
 end
 
@@ -171,8 +171,12 @@ always @(posedge clk_in) begin
     pop_count_r <= pop_count_w;
 end
 
-//Handling the output sum_out, output psum_r
-assign sum_out = psum_r[pop_count_r[7:2]][2'd3-pop_count_r[1:0]];
+//Handling the output sum_out, collecting the sign bit of the psum_r with corresponding row index pop_count_r
+always @(*) begin
+    for (z = 0; z <= OUT_ROW_LENGTH-1; z = z + 1) begin
+        sum_out[z] = ~psum_r[pop_count_r][z][WIDTH-1]; //Sign bit
+    end
+end
 
 endmodule
 
